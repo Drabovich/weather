@@ -1,10 +1,11 @@
 <script setup>
-
-    import { computed, ref, watch } from 'vue';
+import { computed, ref, watch } from 'vue';
+import axios from 'axios';
 
     const city = ref("");
     const weatherData = ref(null);
-    const loading = ref(false);
+    const errorMessage = ref("");
+    const isLoading = ref(false);
 
     const handleEnterKey = (e) => {
         city.value = e.target.value;
@@ -15,20 +16,25 @@
         return `https://api.openweathermap.org/data/2.5/weather?units=metric&lang=ru&q=${city.value}&appid=${import.meta.env.VITE_API_KEY}`
     })
 
-    watch(city, async () => {
-        try {
-            loading.value = true;
-
-            const res = await fetch(url.value);
-            weatherData.value = res.ok ? await res.json() : null;
-
-        } catch (error) {
-            weatherData.value = null;
-            console.error(error)
-
-        } finally {
-            loading.value = false
-        }
+    watch(city, () => {
+        isLoading.value = true;
+        weatherData.value = null;
+        errorMessage.value = "";
+        
+        axios
+            .get(url.value)
+            .then(res => {
+                weatherData.value = res.data;
+            })
+            .catch(e => {
+                console.log(e)
+                if(e.response.status === 404) {
+                    errorMessage.value = "Информация отсутствует!"
+                } else {
+                    errorMessage.value = "Ошибка сервера! Попробуйте позже ..."
+                }
+            })
+            .finally(() => isLoading.value = false);
     })
 </script>
 
@@ -38,10 +44,14 @@
             class="input"
             type="text"
             placeholder="Введите город"
-            :disabled="loading"
+            :disabled="isLoading"
             @keyup.enter="handleEnterKey($event)"
         />
-        <div class="info" v-if="weatherData">
+        <div v-if="isLoading" class="wrapper-loader">
+            <span class="loader"></span>
+        </div>
+        <div v-else-if="errorMessage" class="error">{{ errorMessage }}</div>
+        <div v-else-if="weatherData" class="info">
             <div class="block-left">
                 <div class="temperature">{{ Math.round(weatherData.main?.temp) }} &#176;C</div>
                 <div class="city">{{ weatherData.name }} {{ weatherData.sys?.country }}</div>
@@ -54,7 +64,6 @@
                 <div class="description">{{ weatherData.weather[0]?.description }}</div>
             </div>
         </div>
-        <div class="error" v-else>Информация отсутствует!</div>
     </div>
 </template>
 
@@ -122,4 +131,30 @@
         line-height: 30px;
         letter-spacing: 1.5px;
     }
+
+    .wrapper-loader {
+        display: flex;
+        justify-content: center;
+        align-items: center;
+    }
+
+    .loader {
+        width: 48px;
+        height: 48px;
+        border: 5px solid #FFF;
+        border-bottom-color: transparent;
+        border-radius: 50%;
+        display: inline-block;
+        box-sizing: border-box;
+        animation: rotation 1s linear infinite;
+    }
+
+    @keyframes rotation {
+        0% {
+            transform: rotate(0deg);
+        }
+        100% {
+            transform: rotate(360deg);
+        }
+    } 
 </style>
