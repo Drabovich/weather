@@ -3,6 +3,9 @@
 #app {
     background-color: #121212;
     min-height: 100vh;
+    @supports (min-height: 100dvh) {
+        min-height: 100dvh;
+    }
     padding: 20px;
     color: white;
     display: flex; 
