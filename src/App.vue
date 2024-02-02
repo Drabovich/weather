@@ -8,7 +8,7 @@ import axios from 'axios';
     const isLoading = ref(false);
 
     const handleEnterKey = (e) => {
-        city.value = e.target.value;
+        city.value = e.target.value.trim();
         e.target.value = "";
     };
 
